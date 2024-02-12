@@ -54,8 +54,3 @@ public class ContentModifierPreProcessor extends AbstractTestElement implements 
         return ".+";
     }
 }
-
-//    private static final String USE_STRING = "string";
-//    private static final String USE_JSON = "json";
-//    private static final String USE_REGEX = "regex";
-//    private static final String USE_XPATH = "xpath";

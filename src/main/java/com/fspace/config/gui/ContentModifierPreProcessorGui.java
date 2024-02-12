@@ -15,13 +15,11 @@ import java.util.List;
 
 public class ContentModifierPreProcessorGui extends AbstractPreProcessorGui {
     private static final Logger LOGGER = LoggerFactory.getLogger(ContentModifierPreProcessorGui.class);
-
     protected transient ObjectTableModel tableModel;
     private static final String COMPONENT_NAME = "Content Modifier PreProcessor";
-
     private JLabeledTextField sourceContentField;
-    private final String COLUMN_NAMES[] = {"queryPath", "replaceWith"};
-    private JRadioButton useStringReplace;
+    private final String COLUMN_NAMES[] = {"Expression", "Operand", "Value to Replace"};
+    private JRadioButton useString;
     private JRadioButton useJson;
     private JRadioButton useXpath;
     private JRadioButton useRegex;
@@ -31,13 +29,25 @@ public class ContentModifierPreProcessorGui extends AbstractPreProcessorGui {
         init();
         initFields();
     }
-    public String getStaticLabel() {
-        return COMPONENT_NAME;
-    }
+
     @Override
     public String getLabelResource() {
         return getClass().getCanonicalName();
     }
+
+    public String getStaticLabel() {
+        return COMPONENT_NAME;
+    }
+
+    @Override
+    public void configure(TestElement element) {
+        super.configure(element);
+        if (element instanceof ContentModifierPreProcessor) {
+            ContentModifierPreProcessor el = (ContentModifierPreProcessor)element;
+//            this.sourceContentField.setText(el.getSourceContent());
+        }
+    }
+
     @Override
     public TestElement createTestElement() {
         ContentModifierPreProcessor preProcessor = new ContentModifierPreProcessor();
@@ -47,16 +57,12 @@ public class ContentModifierPreProcessorGui extends AbstractPreProcessorGui {
     }
 
     @Override
-    public void configure(TestElement element) {
-        super.configure(element);
+    public void modifyTestElement(TestElement element) {
+        super.configureTestElement(element);
         if (element instanceof ContentModifierPreProcessor) {
             ContentModifierPreProcessor el = (ContentModifierPreProcessor)element;
-            this.sourceContentField.setText(el.getSourceContent());
+            //this.sourceContentField.setText(el.getSourceContent());
         }
-    }
-
-    @Override
-    public void modifyTestElement(TestElement element) {
 
     }
 
@@ -64,9 +70,12 @@ public class ContentModifierPreProcessorGui extends AbstractPreProcessorGui {
         setLayout(new BorderLayout(0, 5));
         setBorder(makeBorder());
         add(getBoxPanel(), BorderLayout.NORTH); // This adds the Radio button Selection
-        JPanel container = new JPanel(new BorderLayout());
-        container.add(getMainPanel(), "North");
-        add(container, "Center");
+        Box container = Box.createVerticalBox();
+        container.add(getMainPanel());
+        add(container, BorderLayout.CENTER);
+//        JPanel container = new JPanel(new BorderLayout());
+//        container.add(getMainPanel(), BorderLayout.CENTER);
+//        add(container, "Center");
     }
 
     private Box getBoxPanel() {
@@ -77,20 +86,29 @@ public class ContentModifierPreProcessorGui extends AbstractPreProcessorGui {
     }
 
     private JPanel getMainPanel() {
-        JPanel mainPanel = new JPanel(new GridBagLayout());
+        JPanel mainPanel = new JPanel(new BorderLayout());
         GridBagConstraints labelConstraints = new GridBagConstraints();
-        labelConstraints.anchor = 24;
+        labelConstraints.anchor = GridBagConstraints.WEST;
         GridBagConstraints editConstraints = new GridBagConstraints();
-        editConstraints.anchor = 23;
+        editConstraints.anchor = GridBagConstraints.EAST;
         editConstraints.weightx = 1.0D;
-        editConstraints.fill = 2;
+        editConstraints.fill = GridBagConstraints.HORIZONTAL;
         editConstraints.insets = new Insets(2, 0, 0, 0);
         labelConstraints.insets = new Insets(2, 0, 0, 0);
-        mainPanel.add(getScrollPane());
-//        addToPanel(mainPanel, labelConstraints, 0, 0, new JLabel("FIFO Queue Name to Get Data From: ", 4));
-//        addToPanel(mainPanel, editConstraints, 1, 0, this.sourceContent = new JTextField(20));
-        addToPanel(mainPanel, labelConstraints, 0, 1, new JLabel("Content : ", 4));
-        addToPanel(mainPanel, editConstraints, 1, 1, this.sourceContentField = new JLabeledTextField());
+
+        JPanel contentPanel = new JPanel(new GridBagLayout());
+        contentPanel.add(getScrollPane());
+
+        JPanel buttonPanel = new JPanel();
+        buttonPanel.add(new JButton("Add"));
+        buttonPanel.add(new JButton("Add from clipboard"));
+        buttonPanel.add(new JButton("Delete"));
+        buttonPanel.add(new JButton("Up"));
+        buttonPanel.add(new JButton("Down"));
+
+        mainPanel.add(contentPanel, BorderLayout.CENTER);
+        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+
         return mainPanel;
     }
 
@@ -101,37 +119,69 @@ public class ContentModifierPreProcessorGui extends AbstractPreProcessorGui {
         return scrollPane;
     }
 
+//    private JPanel getMainPanel() {
+//        JPanel mainPanel = new JPanel(new GridBagLayout());
+//        GridBagConstraints labelConstraints = new GridBagConstraints();
+//        labelConstraints.anchor = GridBagConstraints.WEST;
+//        GridBagConstraints editConstraints = new GridBagConstraints();
+//        editConstraints.anchor = GridBagConstraints.EAST;
+//        editConstraints.weightx = 1.0D;
+//        editConstraints.fill = GridBagConstraints.HORIZONTAL;
+//        editConstraints.insets = new Insets(2, 0, 0, 0);
+//        labelConstraints.insets = new Insets(2, 0, 0, 0);
+//        mainPanel.add(getScrollPane());
+//        return mainPanel;
+//    }
+//
+//    private JScrollPane getScrollPane() {
+//        Object[][] data = {};
+//        JTable table = new JTable(data, COLUMN_NAMES);
+//        JScrollPane scrollPane = new JScrollPane(table);
+//        return scrollPane;
+//    }
+
     private JPanel makeSourcePanel() {
         JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
         panel.setBorder(BorderFactory.createTitledBorder("Choose the replacer type")); //$NON-NLS-1$
 
-        useStringReplace = new JRadioButton("String Replace");
-        useJson = new JRadioButton("Json");
+        // Create a panel for the name input
+        JPanel namePanel = new JPanel(new BorderLayout());
+        JLabel nameLabel = new JLabel("Variable Name: ");
+        JTextField nameField = new JTextField();
+        namePanel.add(nameLabel, BorderLayout.WEST);
+        namePanel.add(nameField, BorderLayout.CENTER);
+
+        panel.add(namePanel); // Add the name panel to the main panel
+
+        useString = new JRadioButton("String");
+        useJson = new JRadioButton("JSON");
         useRegex = new JRadioButton("RegEx");
         useXpath = new JRadioButton("XPath");
 
         group = new ButtonGroup();
-        group.add(useStringReplace);
+        group.add(useString);
         group.add(useJson);
         group.add(useRegex);
         group.add(useXpath);
 
-        panel.add(useStringReplace);
-        panel.add(useJson);
-        panel.add(useRegex);
-        panel.add(useXpath);
+        // Create a panel for the radio buttons
+        JPanel radioPanel = new JPanel();
+        radioPanel.add(useString);
+        radioPanel.add(useJson);
+        radioPanel.add(useRegex);
+        radioPanel.add(useXpath);
 
-        useStringReplace.setSelected(true); //Defaults to string replacer
+        // Add the radio panel to the main panel
+        panel.add(radioPanel);
+
+        useString.setSelected(true); //Defaults to string replacer
         // So we know which button is selected
-        useStringReplace.setActionCommand(ContentModifierPreProcessor.USE_STRING);
+        useString.setActionCommand(ContentModifierPreProcessor.USE_STRING);
         useJson.setActionCommand(ContentModifierPreProcessor.USE_JSON);
         useRegex.setActionCommand(ContentModifierPreProcessor.USE_REGEX);
         useXpath.setActionCommand(ContentModifierPreProcessor.USE_XPATH);
 
-//        GridBagConstraints gbc = new GridBagConstraints();
-//        initConstraints(gbc);
-//        addField(panel, sourceContentField, gbc);
-//        resetContraints(gbc);
         return panel;
     }
 
@@ -162,7 +212,6 @@ public class ContentModifierPreProcessorGui extends AbstractPreProcessorGui {
         gbc.fill=GridBagConstraints.NONE;
     }
 
-
     private void addToPanel(JPanel panel, GridBagConstraints constraints, int col, int row, JComponent component) {
         constraints.gridx = col;
         constraints.gridy = row;
@@ -170,7 +219,7 @@ public class ContentModifierPreProcessorGui extends AbstractPreProcessorGui {
     }
 
     private void initFields() {
-        this.sourceContentField.setText("");
+        //this.sourceContentField.setText("");
     }
 
     @Override
